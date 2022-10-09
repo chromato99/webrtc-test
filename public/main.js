@@ -9,9 +9,12 @@ myVideo.muted = true;
 
 let username = prompt('Enter username', Math.random());
 let peer = new Peer();
-let conns = new Array();
+let conns = new Array(); // 동접한 사람의 data channel
+let calls = new Array();
 
 let myVideoStream;
+let myPeerId;
+
 navigator.mediaDevices
   .getUserMedia({
     audio: true,
@@ -26,16 +29,28 @@ navigator.mediaDevices
       const video = document.createElement("video");
       call.on("stream", (userVideoStream) => {
         addVideoStream(video, userVideoStream);
+        calls.push(call); // 전화 받은 클라이언트 
       });
     });
 
     socket.on("user-connected", (peerId) => {
-      connectToNewUser(peerId, stream);
+      connectToNewUser(peerId, stream); // 전화를 주는 클라이언트
     });
   });
 
 peer.on("open", (peerId) => {
   socket.emit("join-room", roomname, peerId, username);
+  myPeerId = peerId;
+  socket.on("user has left",(socketId)=> {
+      socket.emit("peerid for user has left", myPeerId);
+      
+  });
+  socket.on("disconnect with this peerid", (peerId)=>{
+      if(myPeerId !== peerId){
+          conns = conns.filter((element) => element !== peerId);
+          calls = calls.filter((element) => element !== peerId);
+      }
+  })
 });
 
 
@@ -57,7 +72,7 @@ const connectToNewUser = (peerId, stream) => {
   call.on("stream", (userVideoStream) => {
     addVideoStream(video, userVideoStream);
   });
-
+  calls.push(call);
   conn.on('open', () => {
     conn.on('data', (data) => {
       var chatArea = document.getElementById('chatArea');
