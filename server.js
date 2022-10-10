@@ -40,14 +40,15 @@ io.on('connection', (socket) => {
   socket.on('join-room', (roomname, peerId, username) => {
     socket.join(roomname);
     socket.to(roomname).emit("user-connected", peerId);
-    
   });
   socket.on("disconnect", (reason) => {
      for (const room of socket.rooms){ // 소켓이 속한 룸의 정보
          if (room !== socket.id){
              socket.to(room).emit("user has left", socket.id);
-             socket.on("peerid for user has left", (peerid)=>{
-                socket.to(room).emit("disconnect with this peerid", peerid)
+             socket.on("peerid for user has left", (socketid, peerid) => {
+                 socket.broadcast.to(room).emit('user-disconnected', peerid); 
+                
+                
              })
          }
      }
@@ -55,6 +56,6 @@ io.on('connection', (socket) => {
 });
 
 server.listen(port, function () { // Open server
-  console.log(`Listening on https://localhost:${port}/`);
+  console.log(`Listening on http://localhost:${port}/`);
 });
 

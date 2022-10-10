@@ -41,16 +41,21 @@ navigator.mediaDevices
 peer.on("open", (peerId) => {
   socket.emit("join-room", roomname, peerId, username);
   myPeerId = peerId;
-  socket.on("user has left",(socketId)=> {
-      socket.emit("peerid for user has left", myPeerId);
-      
-  });
-  socket.on("disconnect with this peerid", (peerId)=>{
-      if(myPeerId !== peerId){
-          conns = conns.filter((element) => element !== peerId);
-          calls = calls.filter((element) => element !== peerId);
-      }
-  })
+});
+
+socket.on("user has left",(socketId)=> {
+    
+    socket.emit("peerid for user has left", socketId, myPeerId);
+    socket.on("disconnect with this peerid", (peerId)=>{
+        if(myPeerId !== peerId){
+            peer.on('close', (peerId)=>{
+                conns = conns.filter((element) => element !== peerId);
+                calls = calls.filter((element) => element !== peerId);
+            })
+
+        }
+    })
+
 });
 
 
@@ -79,8 +84,13 @@ const connectToNewUser = (peerId, stream) => {
       chatArea.append("\n" + data.username + " : " + data.msg);
       document.getElementById("chatArea").scrollTop = document.getElementById("chatArea").scrollHeight;
     });
+    
     conns.push(conn);
   })
+    call.on('close', () => {
+        video.remove()
+        conn.remove()
+    })
 };
 
 const addVideoStream = (video, stream) => {
