@@ -19,21 +19,21 @@ app.use(express.static('public')); // Set static file location
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
-  res.render('index', {roomList: roomList});
+  res.render('index', { roomList: roomList });
 });
 
 app.get('/room/:roomname', (req, res) => {
   roomList.forEach((elem) => {
-      if(elem.name == req.params.roomname) { // If already exist
-        res.render('room', {roomname: elem.name});
-      }
+    if (elem.name == req.params.roomname) { // If already exist
+      res.render('room', { roomname: elem.name });
+    }
   });
   roomList[0]
   let room = { // Create new room data
-      name: req.body.roomname,
+    name: req.params.roomname,
   };
   roomList.push(room);
-  res.render('room', {roomname: room.name});
+  res.render('room', { roomname: room.name });
 });
 
 io.on('connection', (socket) => {
@@ -57,5 +57,7 @@ io.on('connection', (socket) => {
 
 server.listen(port, function () { // Open server
   console.log(`Listening on http://localhost:${port}/`);
+
 });
+
 
