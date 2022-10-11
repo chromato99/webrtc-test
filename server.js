@@ -23,12 +23,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/room/:roomname', (req, res) => {
-  roomList.forEach((elem) => {
+  for( const elem of roomList) {
     if (elem.name == req.params.roomname) { // If already exist
       res.render('room', { roomname: elem.name });
+      return;
     }
-  });
-  roomList[0]
+  }
+
   let room = { // Create new room data
     name: req.params.roomname,
   };
@@ -40,16 +41,18 @@ io.on('connection', (socket) => {
   socket.on('join-room', (roomname, peerId, username) => {
     socket.join(roomname);
     socket.to(roomname).emit("user-connected", peerId);
+    socket.data.peerId= peerId; // peerid가 생길 때마다 저장
+
   });
-  socket.on("disconnect", (reason) => {
+  socket.on("disconnecting", (reason) => {
+    //console.log(socket.id)
+    console.log(socket.rooms)
      for (const room of socket.rooms){ // 소켓이 속한 룸의 정보
+
          if (room !== socket.id){
-             socket.to(room).emit("user has left", socket.id);
-             socket.on("peerid for user has left", (socketid, peerid) => {
-                 socket.broadcast.to(room).emit('user-disconnected', peerid); 
-                
-                
-             })
+            console.log(room);
+            io.to(room).emit("user has left", socket.data.peerId);// disconnect된 소켓 제외 나머지 소켓한테 연락
+
          }
      }
     });

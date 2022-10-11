@@ -29,7 +29,10 @@ navigator.mediaDevices
       const video = document.createElement("video");
       call.on("stream", (userVideoStream) => {
         addVideoStream(video, userVideoStream);
-        calls.push(call); // 전화 받은 클라이언트 
+        calls.push({
+          cal : call,
+          video: video
+        }); // 전화 받은 클라이언트
       });
     });
 
@@ -41,20 +44,37 @@ navigator.mediaDevices
 peer.on("open", (peerId) => {
   socket.emit("join-room", roomname, peerId, username);
   myPeerId = peerId;
+
 });
 
-socket.on("user has left",(socketId)=> {
-    
-    socket.emit("peerid for user has left", socketId, myPeerId);
-    socket.on("disconnect with this peerid", (peerId)=>{
-        if(myPeerId !== peerId){
-            peer.on('close', (peerId)=>{
-                conns = conns.filter((element) => element !== peerId);
-                calls = calls.filter((element) => element !== peerId);
-            })
+socket.on("user has left",(disPeerId)=> {
 
-        }
-    })
+  for (const key of conns.keys()) {
+    if(conns[key].peer === disPeerId){
+      var removedConn = conns.splice(key, 1);
+      //console.log(removedConn)
+      removedConn.close();
+
+    }
+
+  }
+
+  for (const key of calls.keys()) {
+    console.log(calls)
+    if(calls[key].cal.peer === disPeerId){
+      var removedCall = calls.splice(key, 1);
+      console.log(removedCall)
+      removedCall.cal.close();
+
+      console.log(removedCall.video)
+      removedCall.video.remove();
+    }
+  }
+// TODO : 유저가 다 나간후 RoomList 제거
+
+  // conns = conns.filter((element) => element !== disPeerId);
+  // calls = calls.filter((element) => element !== disPeerId);
+
 
 });
 
@@ -78,7 +98,11 @@ const connectToNewUser = (peerId, stream) => {
   call.on("stream", (userVideoStream) => {
     addVideoStream(video, userVideoStream);
   });
-  calls.push(call);
+  calls.push({
+    cal: call,
+    video: video
+  });
+  console.log(video)
   conn.on('open', () => {
     console.log("DataChannel connected");
     conn.on('data', (data) => {
@@ -89,10 +113,7 @@ const connectToNewUser = (peerId, stream) => {
     
     conns.push(conn);
   })
-    call.on('close', () => {
-        video.remove()
-        conn.remove()
-    })
+
 };
 
 const addVideoStream = (video, stream) => {
@@ -100,6 +121,7 @@ const addVideoStream = (video, stream) => {
   video.addEventListener("loadedmetadata", () => {
     video.play();
     videoGrid.append(video);
+    // video.remove();
   });
 };
 
