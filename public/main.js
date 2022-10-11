@@ -20,20 +20,24 @@ navigator.mediaDevices
     audio: true,
     video: true,
   })
+
   .then((stream) => {
+
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
+
 
     peer.on("call", (call) => {
       call.answer(stream);
       const video = document.createElement("video");
       call.on("stream", (userVideoStream) => {
         addVideoStream(video, userVideoStream);
-        calls.push({
-          cal : call,
-          video: video
-        }); // 전화 받은 클라이언트
       });
+      calls.push({
+        cal : call,
+        video: video
+      });
+
     });
 
     socket.on("user-connected", (peerId) => {
@@ -48,33 +52,27 @@ peer.on("open", (peerId) => {
 });
 
 socket.on("user has left",(disPeerId)=> {
+  console.log("0")
+  console.log(calls)
+  for (const key of calls.keys()) {
+    console.log("1")
+    if(calls[key].cal.peer === disPeerId){
+      console.log("2")
+      var removedCall = calls.splice(key, 1);
+      console.log(removedCall[0].video)
+      removedCall[0].video.remove();
 
+      console.log(removedCall[0])
+      removedCall[0].cal.close();
+    }
+  }
   for (const key of conns.keys()) {
     if(conns[key].peer === disPeerId){
-      var removedConn = conns.splice(key, 1);
-      //console.log(removedConn)
-      removedConn.close();
-
-    }
-
-  }
-
-  for (const key of calls.keys()) {
-    console.log(calls)
-    if(calls[key].cal.peer === disPeerId){
-      var removedCall = calls.splice(key, 1);
-      console.log(removedCall)
-      removedCall.cal.close();
-
-      console.log(removedCall.video)
-      removedCall.video.remove();
+      console.log("chatting closed")
+      var removedConn= conns.splice(key, 1);
+      removedConn[0].close();
     }
   }
-// TODO : 유저가 다 나간후 RoomList 제거
-
-  // conns = conns.filter((element) => element !== disPeerId);
-  // calls = calls.filter((element) => element !== disPeerId);
-
 
 });
 
@@ -96,13 +94,13 @@ const connectToNewUser = (peerId, stream) => {
   const conn = peer.connect(peerId);
   const video = document.createElement("video");
   call.on("stream", (userVideoStream) => {
+    console.log("stream")
     addVideoStream(video, userVideoStream);
   });
-  calls.push({
+  calls.push({ // 전화거는쪽
     cal: call,
     video: video
   });
-  console.log(video)
   conn.on('open', () => {
     console.log("DataChannel connected");
     conn.on('data', (data) => {
